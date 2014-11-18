@@ -782,9 +782,6 @@ module ActiveRecord
 
   class Migrator#:nodoc:
     class << self
-      attr_writer :migrations_paths
-      alias :migrations_path= :migrations_paths=
-
       def migrate(migrations_paths, target_version = nil, &block)
         case
         when target_version.nil?
@@ -861,10 +858,17 @@ module ActiveRecord
       end
 
       def migrations_paths
-        @migrations_paths ||= ['db/migrate']
-        # just to not break things if someone uses: migration_path = some_string
-        Array(@migrations_paths)
+        @migrations_paths ||= if defined?(Rails) && Rails.application
+            Rails.application.paths['db/migrate'].to_a
+          else
+            ['db/migrate']
+          end
       end
+
+      def migrations_paths=(paths)
+        @migrations_paths = Array(paths)
+      end
+      alias :migrations_path= :migrations_paths=
 
       def migrations_path
         migrations_paths.first
